@@ -14,6 +14,22 @@
       display: none;
     }
 
+    model-viewer::part(default-ar-button) {
+      position: fixed !important;
+      bottom: 30px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 999999 !important;
+      background: #00e5b0 !important;
+      color: #06060e !important;
+      border-radius: 30px !important;
+      padding: 16px 40px !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      width: auto !important;
+      height: auto !important;
+    }
+
     #contacts-screen {
       position: fixed; inset: 0; z-index: 100;
       background: #06060e;
@@ -119,16 +135,16 @@
     .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #00e5b0; animation: breathe 1.5s infinite; flex-shrink: 0; }
 
     .vcard {
-  position: fixed; z-index: 99999;
-  background: rgba(6,6,14,0.92);
-  border: 1px solid #1e1e35;
-  border-radius: 18px; padding: 14px 16px;
-  min-width: 148px;
-  backdrop-filter: blur(24px);
-  display: none;
-  pointer-events: none;
-  animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
-}
+      position: fixed; z-index: 99999;
+      background: rgba(6,6,14,0.92);
+      border: 1px solid #1e1e35;
+      border-radius: 18px; padding: 14px 16px;
+      min-width: 148px;
+      backdrop-filter: blur(24px);
+      pointer-events: none;
+      display: none;
+      animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+    }
     @keyframes cardIn {
       from { opacity:0; transform: scale(0.85) translateY(8px); }
       to   { opacity:1; transform: scale(1) translateY(0); }
@@ -155,16 +171,6 @@
     #vc-sleep    { top: 12%; right: 3%; }
     #vc-oxygen   { top: 45%; left: 3%; }
     #vc-activity { top: 45%; right: 3%; }
-
-    #ar-btn {
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-      z-index: 999999; display: none;
-      background: #00e5b0; color: #06060e;
-      border: none; padding: 16px 40px;
-      border-radius: 30px; font-size: 16px; font-weight: 600;
-      cursor: pointer; font-family: 'DM Sans', sans-serif;
-      white-space: nowrap; box-shadow: 0 4px 24px #00e5b040;
-    }
   </style>
 </head>
 <body>
@@ -242,7 +248,6 @@
 <!-- AR CONTROLS -->
 <button id="back-btn" onclick="closeAR()">← Back</button>
 <div id="person-label"><div class="live-dot"></div><span id="label-name"></span></div>
-<button id="ar-btn" onclick="launchAR()">📍 Place in Room</button>
 
 <!-- VITAL CARDS -->
 <div class="vcard" id="vc-heart">
@@ -341,7 +346,6 @@ function openAR(index) {
     document.getElementById('back-btn').style.display = 'block';
     document.getElementById('person-label').style.display = 'flex';
     document.getElementById('label-name').textContent = p.name;
-    document.getElementById('ar-btn').style.display = 'block';
 
     ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach((id, i) => {
       setTimeout(() => {
@@ -359,25 +363,15 @@ function openAR(index) {
         });
         document.getElementById('back-btn').style.zIndex = '999999';
         document.getElementById('person-label').style.zIndex = '999999';
-        document.getElementById('ar-btn').style.display = 'none';
       }
       if (e.detail.status === 'not-presenting') {
-        document.getElementById('ar-btn').style.display = 'block';
+        ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach(id => {
+          document.getElementById(id).style.zIndex = '99999';
+        });
       }
     });
 
   }, 2500);
-}
-
-function launchAR() {
-  const mv = document.getElementById('mv');
-  // Hide all overlays temporarily so AR can launch cleanly
-  ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
-  });
-  document.getElementById('ar-btn').style.display = 'none';
-  
-  mv.activateAR();
 }
 
 function closeAR() {
@@ -385,7 +379,6 @@ function closeAR() {
   document.getElementById('mv').style.display = 'none';
   document.getElementById('back-btn').style.display = 'none';
   document.getElementById('person-label').style.display = 'none';
-  document.getElementById('ar-btn').style.display = 'none';
   ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
