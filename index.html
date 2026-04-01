@@ -370,7 +370,20 @@ function openAR(index) {
 
 function launchAR() {
   const mv = document.getElementById('mv');
-  mv.activateAR();
+  // Try activateAR first
+  if (mv.canActivateAR) {
+    mv.activateAR();
+  } else {
+    // Fallback — trigger the built in AR button directly
+    const arButton = mv.shadowRoot.querySelector('[slot="ar-button"]') || 
+                     mv.shadowRoot.querySelector('.ar-button') ||
+                     mv.shadowRoot.querySelector('[data-js-focus-visible]');
+    if (arButton) {
+      arButton.click();
+    } else {
+      alert('AR not available on this device. Make sure you are using Chrome on Android.');
+    }
+  }
 }
 
 function closeAR() {
