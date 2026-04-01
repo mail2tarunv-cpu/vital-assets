@@ -1,0 +1,385 @@
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #06060e; font-family: 'DM Sans', sans-serif; color: white; overflow: hidden; }
+
+  model-viewer {
+    width: 100vw; height: 100vh;
+    position: fixed; inset: 0; z-index: 10;
+    display: none;
+  }
+
+  model-viewer::part(default-ar-button) {
+    bottom: 40px !important;
+    right: 20px !important;
+    z-index: 99999 !important;
+  }
+
+  #contacts-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: #06060e;
+    display: flex; flex-direction: column;
+  }
+  .header { padding: 52px 24px 20px; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .logo-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #00e5b0; box-shadow: 0 0 12px #00e5b0;
+    animation: breathe 2s ease-in-out infinite;
+  }
+  @keyframes breathe { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .logo h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; }
+  .header-badge {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: #00e5b0; background: #00e5b015;
+    border: 1px solid #00e5b030;
+    padding: 4px 10px; border-radius: 20px; letter-spacing: 1px;
+  }
+  .header p { font-size: 13px; color: #4a4a6a; }
+  .section-label {
+    padding: 0 24px 10px; font-size: 11px; font-weight: 500;
+    color: #4a4a6a; letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .family-list {
+    padding: 0 16px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto; flex: 1;
+  }
+  .person-card {
+    background: #0d0d1a; border: 1px solid #1e1e35;
+    border-radius: 20px; padding: 18px;
+    display: flex; align-items: center; gap: 16px;
+    cursor: pointer; transition: all 0.25s;
+  }
+  .person-card:hover { transform: translateY(-2px); }
+  .person-card:active { transform: scale(0.98); }
+  .avatar-wrap { position: relative; flex-shrink: 0; }
+  .avatar-circle {
+    width: 54px; height: 54px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; position: relative; z-index: 1;
+  }
+  .ring-svg { position: absolute; top: -4px; left: -4px; width: 62px; height: 62px; }
+  .ring-track { fill: none; stroke-width: 2.5; opacity: 0.15; }
+  .ring-progress { fill: none; stroke-width: 2.5; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  .c-green .avatar-circle { background: #00e5b012; }
+  .c-amber .avatar-circle { background: #ffb34012; }
+  .c-red   .avatar-circle { background: #ff3d6b12; }
+  .c-green .ring-track { stroke: #00e5b0; }
+  .c-amber .ring-track { stroke: #ffb340; }
+  .c-red   .ring-track { stroke: #ff3d6b; }
+  .c-green .ring-progress { stroke: #00e5b0; }
+  .c-amber .ring-progress { stroke: #ffb340; }
+  .c-red   .ring-progress { stroke: #ff3d6b; }
+  .person-info { flex: 1; }
+  .person-name { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+  .person-meta { font-size: 12px; color: #4a4a6a; margin-bottom: 8px; }
+  .alert-pill {
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .ap-green { background: #00e5b015; color: #00e5b0; border: 1px solid #00e5b025; }
+  .ap-amber { background: #ffb34015; color: #ffb340; border: 1px solid #ffb34025; }
+  .ap-red   { background: #ff3d6b15; color: #ff3d6b; border: 1px solid #ff3d6b25; }
+  .card-arrow {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #121220; border: 1px solid #1e1e35;
+    display: flex; align-items: center; justify-content: center;
+    color: #4a4a6a; font-size: 16px; flex-shrink: 0;
+  }
+
+  #loading {
+    position: fixed; inset: 0; z-index: 200;
+    background: #06060e;
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  .loading-name { font-size: 22px; font-weight: 600; }
+  .loading-bar { width: 200px; height: 2px; background: #1e1e35; border-radius: 2px; overflow: hidden; }
+  .loading-fill { height: 100%; width: 0%; background: #00e5b0; border-radius: 2px; transition: width 2s ease; }
+  .loading-sub { font-size: 12px; color: #4a4a6a; font-family: 'DM Mono', monospace; }
+
+  #back-btn {
+    position: fixed; top: 52px; left: 20px; z-index: 99999;
+    background: rgba(0,0,0,0.85); border: 1px solid #333;
+    color: white; padding: 10px 18px; border-radius: 30px;
+    cursor: pointer; font-size: 14px; display: none;
+    backdrop-filter: blur(12px);
+  }
+
+  #person-label {
+    position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
+    z-index: 99999; background: rgba(0,0,0,0.85);
+    border: 1px solid #333; color: white;
+    padding: 8px 20px; border-radius: 30px;
+    font-size: 14px; font-weight: 600;
+    display: none; align-items: center; gap: 8px;
+    pointer-events: none; white-space: nowrap;
+    backdrop-filter: blur(12px);
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #00e5b0; animation: breathe 1.5s infinite; flex-shrink: 0; }
+
+  .vcard {
+    position: fixed; z-index: 99999;
+    background: rgba(6,6,14,0.92);
+    border: 1px solid #1e1e35;
+    border-radius: 18px; padding: 14px 16px;
+    min-width: 148px;
+    backdrop-filter: blur(24px);
+    display: none;
+    animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  @keyframes cardIn {
+    from { opacity:0; transform: scale(0.85) translateY(8px); }
+    to   { opacity:1; transform: scale(1) translateY(0); }
+  }
+  .vcard-header {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid #1e1e35;
+  }
+  .vcard-title { font-size: 10px; font-weight: 500; color: #4a4a6a; letter-spacing: 1.2px; text-transform: uppercase; }
+  .vcard-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; gap: 10px; }
+  .vcard-row:last-child { margin-bottom: 0; }
+  .vcard-label { font-size: 11px; color: #4a4a6a; white-space: nowrap; }
+  .vcard-val { display: flex; align-items: baseline; gap: 3px; }
+  .vnum { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; }
+  .vunit { font-size: 10px; color: #4a4a6a; }
+  .vg { color: #00e5b0; }
+  .va { color: #ffb340; }
+  .vr { color: #ff3d6b; }
+  .vb { color: #4d9fff; }
+  .vp { color: #9b7fff; }
+
+  #vc-heart    { top: 18%; left: 3%; }
+  #vc-sleep    { top: 18%; right: 3%; }
+  #vc-oxygen   { bottom: 22%; left: 3%; }
+  #vc-activity { bottom: 22%; right: 3%; }
+
+  #ar-hint {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    z-index: 99999; font-size: 11px; color: rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.7); border: 1px solid #222;
+    padding: 7px 14px; border-radius: 20px;
+    font-family: 'DM Mono', monospace; white-space: nowrap;
+    display: none; pointer-events: none;
+  }
+</style>
+
+<!-- CONTACTS -->
+<div id="contacts-screen">
+  <div class="header">
+    <div class="header-top">
+      <div class="logo"><div class="logo-dot"></div><h1>Vital</h1></div>
+      <div class="header-badge">LIVE</div>
+    </div>
+    <p>Family health at a glance</p>
+  </div>
+  <div class="section-label">Your Circle</div>
+  <div class="family-list">
+
+    <div class="person-card" onclick="openAR(0)">
+      <div class="avatar-wrap c-amber">
+        <div class="avatar-circle">👨</div>
+        <svg class="ring-svg" viewBox="0 0 62 62">
+          <circle class="ring-track" cx="31" cy="31" r="28"/>
+          <circle class="ring-progress" cx="31" cy="31" r="28" stroke-dasharray="105 176"/>
+        </svg>
+      </div>
+      <div class="person-info">
+        <div class="person-name">Dad</div>
+        <div class="person-meta">Father · 58 yrs · New York</div>
+        <span class="alert-pill ap-amber">⚠ HR elevated 3 days</span>
+      </div>
+      <div class="card-arrow">›</div>
+    </div>
+
+    <div class="person-card" onclick="openAR(1)">
+      <div class="avatar-wrap c-green">
+        <div class="avatar-circle">👩</div>
+        <svg class="ring-svg" viewBox="0 0 62 62">
+          <circle class="ring-track" cx="31" cy="31" r="28"/>
+          <circle class="ring-progress" cx="31" cy="31" r="28" stroke-dasharray="158 176"/>
+        </svg>
+      </div>
+      <div class="person-info">
+        <div class="person-name">Mom</div>
+        <div class="person-meta">Mother · 55 yrs · New York</div>
+        <span class="alert-pill ap-green">✓ All metrics normal</span>
+      </div>
+      <div class="card-arrow">›</div>
+    </div>
+
+    <div class="person-card" onclick="openAR(2)">
+      <div class="avatar-wrap c-red">
+        <div class="avatar-circle">👦</div>
+        <svg class="ring-svg" viewBox="0 0 62 62">
+          <circle class="ring-track" cx="31" cy="31" r="28"/>
+          <circle class="ring-progress" cx="31" cy="31" r="28" stroke-dasharray="62 176"/>
+        </svg>
+      </div>
+      <div class="person-info">
+        <div class="person-name">Brother</div>
+        <div class="person-meta">Sibling · 22 yrs · Boston</div>
+        <span class="alert-pill ap-red">✗ Low sleep 5 days</span>
+      </div>
+      <div class="card-arrow">›</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="loading-name" id="l-name"></div>
+  <div class="loading-bar"><div class="loading-fill" id="l-fill"></div></div>
+  <div class="loading-sub">loading vitals...</div>
+</div>
+
+<!-- AR CONTROLS -->
+<button id="back-btn" onclick="closeAR()">← Back</button>
+<div id="person-label"><div class="live-dot"></div><span id="label-name"></span></div>
+<div id="ar-hint">tap cube → place in your room</div>
+
+<!-- VITAL CARDS -->
+<div class="vcard" id="vc-heart">
+  <div class="vcard-header"><span>❤️</span><span class="vcard-title">Heart</span></div>
+  <div class="vcard-row"><span class="vcard-label">Resting HR</span><div class="vcard-val"><span class="vnum" id="v-hr">--</span><span class="vunit">bpm</span></div></div>
+  <div class="vcard-row"><span class="vcard-label">Peak HR</span><div class="vcard-val"><span class="vnum vg" id="v-peak">--</span><span class="vunit">bpm</span></div></div>
+  <div class="vcard-row"><span class="vcard-label">HRV</span><div class="vcard-val"><span class="vnum vb" id="v-hrv">--</span><span class="vunit">ms</span></div></div>
+</div>
+
+<div class="vcard" id="vc-sleep">
+  <div class="vcard-header"><span>🌙</span><span class="vcard-title">Sleep</span></div>
+  <div class="vcard-row"><span class="vcard-label">Duration</span><div class="vcard-val"><span class="vnum" id="v-sleep">--</span><span class="vunit">hrs</span></div></div>
+  <div class="vcard-row"><span class="vcard-label">Quality</span><div class="vcard-val"><span class="vnum" id="v-quality" style="font-size:13px">--</span></div></div>
+  <div class="vcard-row"><span class="vcard-label">Deep</span><div class="vcard-val"><span class="vnum vp" id="v-deep">--</span><span class="vunit">hrs</span></div></div>
+</div>
+
+<div class="vcard" id="vc-oxygen">
+  <div class="vcard-header"><span>🫁</span><span class="vcard-title">Oxygen</span></div>
+  <div class="vcard-row"><span class="vcard-label">SpO2</span><div class="vcard-val"><span class="vnum vg" id="v-spo2">--</span><span class="vunit">%</span></div></div>
+  <div class="vcard-row"><span class="vcard-label">VO2 Max</span><div class="vcard-val"><span class="vnum vb" id="v-vo2">--</span><span class="vunit">ml/kg</span></div></div>
+</div>
+
+<div class="vcard" id="vc-activity">
+  <div class="vcard-header"><span>🏃</span><span class="vcard-title">Activity</span></div>
+  <div class="vcard-row"><span class="vcard-label">Steps</span><div class="vcard-val"><span class="vnum va" id="v-steps">--</span></div></div>
+  <div class="vcard-row"><span class="vcard-label">Calories</span><div class="vcard-val"><span class="vnum vg" id="v-cal">--</span><span class="vunit">kcal</span></div></div>
+</div>
+
+<!-- MODEL VIEWER -->
+<model-viewer
+  id="mv"
+  src="https://mail2tarunv-cpu.github.io/vital-assets/gavin_reed_-_detroit_become_human.glb"
+  ar
+  ar-modes="webxr scene-viewer quick-look"
+  ar-placement="floor"
+  ar-scale="auto"
+  camera-controls
+  scale="50 50 50"
+  style="width:100vw; height:100vh; background:#06060e; position:fixed; inset:0; z-index:10; display:none;">
+</model-viewer>
+
+<script>
+const people = [
+  {
+    name: "Dad",
+    heart:    { resting: 78, peak: 141, hrv: 32 },
+    sleep:    { hours: 5.5, quality: "Fair",  deep: 1.1 },
+    oxygen:   { spo2: 97,  vo2: 42 },
+    activity: { steps: 4200, cal: 320 }
+  },
+  {
+    name: "Mom",
+    heart:    { resting: 64, peak: 128, hrv: 52 },
+    sleep:    { hours: 7.2, quality: "Good",  deep: 1.8 },
+    oxygen:   { spo2: 99,  vo2: 38 },
+    activity: { steps: 8100, cal: 510 }
+  },
+  {
+    name: "Brother",
+    heart:    { resting: 58, peak: 182, hrv: 61 },
+    sleep:    { hours: 4.1, quality: "Poor",  deep: 0.7 },
+    oxygen:   { spo2: 98,  vo2: 55 },
+    activity: { steps: 6300, cal: 480 }
+  }
+];
+
+function openAR(index) {
+  const p = people[index];
+  document.getElementById('contacts-screen').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('l-name').textContent = p.name;
+  setTimeout(() => { document.getElementById('l-fill').style.width = '100%'; }, 50);
+
+  const hrEl = document.getElementById('v-hr');
+  hrEl.textContent = p.heart.resting;
+  hrEl.className = 'vnum ' + (p.heart.resting > 70 ? 'va' : 'vg');
+  document.getElementById('v-peak').textContent = p.heart.peak;
+  document.getElementById('v-hrv').textContent  = p.heart.hrv;
+
+  const slEl = document.getElementById('v-sleep');
+  slEl.textContent = p.sleep.hours;
+  slEl.className = 'vnum ' + (p.sleep.hours < 5 ? 'vr' : p.sleep.hours < 7 ? 'va' : 'vg');
+  const sqEl = document.getElementById('v-quality');
+  sqEl.textContent = p.sleep.quality;
+  sqEl.className = 'vnum ' + (p.sleep.quality === 'Good' ? 'vg' : p.sleep.quality === 'Fair' ? 'va' : 'vr');
+  document.getElementById('v-deep').textContent  = p.sleep.deep;
+  document.getElementById('v-spo2').textContent  = p.oxygen.spo2;
+  document.getElementById('v-vo2').textContent   = p.oxygen.vo2;
+  document.getElementById('v-steps').textContent = p.activity.steps.toLocaleString();
+  document.getElementById('v-cal').textContent   = p.activity.cal;
+
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('l-fill').style.width = '0%';
+    document.getElementById('mv').style.display = 'block';
+    document.getElementById('back-btn').style.display = 'block';
+    document.getElementById('person-label').style.display = 'flex';
+    document.getElementById('label-name').textContent = p.name;
+    document.getElementById('ar-hint').style.display = 'block';
+
+    ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).style.display = 'block';
+      }, i * 150);
+    });
+
+    const mv = document.getElementById('mv');
+    mv.addEventListener('ar-status', (e) => {
+      if (e.detail.status === 'session-started') {
+        ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach(id => {
+          const el = document.getElementById(id);
+          el.style.zIndex = '99999';
+          el.style.display = 'block';
+        });
+        document.getElementById('back-btn').style.zIndex = '99999';
+        document.getElementById('person-label').style.zIndex = '99999';
+        document.getElementById('ar-hint').style.display = 'none';
+      }
+      if (e.detail.status === 'not-presenting') {
+        ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach(id => {
+          document.getElementById(id).style.zIndex = '99999';
+        });
+      }
+    });
+
+  }, 2500);
+}
+
+function closeAR() {
+  document.getElementById('contacts-screen').style.display = 'flex';
+  document.getElementById('mv').style.display = 'none';
+  document.getElementById('back-btn').style.display = 'none';
+  document.getElementById('person-label').style.display = 'none';
+  document.getElementById('ar-hint').style.display = 'none';
+  ['vc-heart','vc-sleep','vc-oxygen','vc-activity'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+}
+</script>
